@@ -1,0 +1,412 @@
+<!doctype html>
+<html>
+    <head>
+        <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+        <title>WebSocket Tester</title>
+        <style>
+            body {
+                color: #222;
+                height: 100%;
+                font-size: 12px;
+                font-weight: normal;
+                font-family: Tahoma, Helvetica, Arial, "Microsoft Yahei", STXihei, sans-serif;
+            }
+            div.container {
+                margin: 0 auto;
+                width: 1050px;
+                height: 100%;
+                padding: 0 0 3em 0;
+            }
+            div.container:after {
+                content: " ";
+                display: block;
+                clear: both;
+            }
+            div.content {
+                display: inline;
+                float: left;
+                border: 0;
+                margin: 0;
+                padding: 0;
+                width: 500px;
+                margin: 10px 10px 10px 0px;
+                height: 500px;
+            }
+            div.letter_container {
+                display: inline-block;
+                margin-right: 5px;
+                padding: 0;
+                border: 0;
+            }
+            table.letter {
+                border-spacing: 1px;
+            }
+            td.letter_point {
+                width: 5px;
+                height: 5px;
+            }
+            div.container_pane {
+                margin-top: 20px;
+                border: 0;
+            }
+            div.container_pane_title {
+                font-size: 16px;
+                padding: 2px 0px;
+                font-weight: bold;
+            }
+            div.container_pane_content {
+                padding: 2px;
+            }
+            div.container_labeltext {
+                height: 24px;
+                padding: 0;
+                border: 0;
+                margin: 0px 0px 10px 0px;
+            }
+            div.container_label {
+                border: 0;
+                margin: 0;
+                padding: 0;
+                font-weight: bold;
+                display: inline-block;
+            }
+            textarea.container_text, input.container_text {
+                width: 490px;
+                border: 1px solid white;
+                outline: none;
+                resize: none;
+                font-family: Tahoma, Helvetica, Arial, "Microsoft Yahei", STXihei, sans-serif;
+            }
+            textarea.container_text:hover, input.container_text:hover {
+                border: 1px solid lightblue;
+            }
+            div.container_button_pane {
+                padding: 5px 0px 10px 0px;
+                margin-bottom: 10px;
+                border-bottom: 1px solid lightblue;
+            }
+            div.button {
+                padding: 3px;
+                display: inline-block;
+                text-align: center;
+                vertical-align: middle;
+                font-size: 12px;
+                font-weight: bold;
+                border-radius: 10px;
+                border: 1px solid white;
+                cursor: pointer;
+            }
+            div.button:hover {
+                border-color: lightblue;
+                background-color: lightblue;
+            }
+            div.container_inter_list {
+                margin: 0;
+                padding: 0;
+                border: 0;
+                height: 600px;
+                overflow-y: auto;
+            }
+            ul {
+                width: 100%;
+                margin: 0;
+                padding: 0;
+            }
+            ul li {
+                list-style: none;
+            }
+            a {
+                padding: 3px;
+                border-radius: 10px;
+                border: 1px solid white;
+                font-size: 12px;
+                position: relative;
+                text-decoration: none;
+                display: block;
+                color: #222;
+            }
+            a.list_item_message {}
+            a.list_item_connect, a.list_item_myclose {
+                color: limegreen;
+            }
+            a.list_item_send {
+                color: lightblue;
+            }
+            a.list_item_error {
+                color: firebrick;
+            }
+            p {
+                padding: 3px;
+                margin: 0px 0px 5px 0px;
+                line-height: 16px;
+                font-size: 12px;
+                word-break: keep-all;
+                display: none;
+            }
+            li:target a {
+                font-weight: bold;
+            }
+            li:target p {
+                display: block;
+            }
+            .container_inter_list::-webkit-scrollbar {
+                width: 8px;
+            }
+            .container_inter_list::-webkit-scrollbar-track {
+                border-radius: 10px;
+                border: 1px solid lightblue;
+            }
+            .container_inter_list::-webkit-scrollbar-thumb {
+                border-radius: 10px;
+                background-color: darkcyan;
+            }
+            header {
+                top: 0;
+                width: 100%;
+                text-align: center;
+                font-size: 26pt;
+                font-weight: bolder;
+                color: lightblue;
+                margin-bottom: .25em;
+            }
+            footer  {
+                position: fixed;
+                bottom: 0;
+                width: 100%;
+                text-align: center;
+                padding: 1em 0;
+            }
+            footer, footer a {
+                font-size: 7pt;
+                color: lightblue;
+            }
+            a {
+                display: inline;
+            }
+            footer span {
+                line-height: 2em;
+            }
+        </style>
+        <script>
+            var _ws_resp_count = 0;
+            var _ws_conn = null;
+
+            function GetTimeStamp() {
+                return new Date().toUTCString();
+            }
+
+            function applyMessage(state, timestamp, msg) {
+                var n = 'resp_' + (++_ws_resp_count).toFixed(0) + '_' + Math.round(Math.random() * 10000).toFixed(0);
+                var e = document.createElement('li');
+                e.id = n;
+                var a = document.createElement('a');
+                a.href = '#' + n;
+                var tag = '';
+                switch (state) {
+                    case 'onsend':
+                        tag = 'SENT';
+                        a.className = 'list_item_send';
+                        break;
+                    case 'onerror':
+                        tag = 'ERROR';
+                        a.className = 'list_item_error';
+                        break;
+                    case 'onconnect':
+                        tag = 'CONNECTED';
+                        a.className = 'list_item_connect';
+                        break;
+                    case 'onmyclose':
+                        tag = 'DISCONNECTED';
+                        a.className = 'list_item_myclose';
+                        break;
+                    default:
+                        tag = 'RESPONSE';
+                        a.className = 'list_item_message';
+                        break;
+                }
+                a.textContent = tag + ' ' + timestamp;
+                var p = document.createElement('p');
+                p.textContent = msg;
+                e.appendChild(a);
+                e.appendChild(p);
+                document.getElementById('resp_list').appendChild(e);
+            }
+
+            function connectWs(url, subproto) {
+                'use strict';
+                if (_ws_conn !== null) {
+                    applyMessage('onerror', GetTimeStamp(), 'WebSocket has been connected. Please close it before connecting.');
+                    return;
+                }
+                try {
+                    if (subproto !== null && subproto.length > 0) {
+                        _ws_conn = new WebSocket(url, subproto);
+                        applyMessage('onconnect', GetTimeStamp(), 'Connecting to ' + url + ", subprotocol: " + subproto);
+                    } else {
+                        _ws_conn = new WebSocket(url);
+                        applyMessage('onconnect', GetTimeStamp(), 'Connecting to ' + url);
+                    }
+                } catch (err) {
+                    applyMessage('onerror', GetTimeStamp(), err.message);
+                    return;
+                }
+                _ws_conn.onopen = function (evt) {
+                    document.getElementById('conn_state').textContent = 'CONNECTED';
+                    applyMessage('onopen', GetTimeStamp(), JSON.stringify(evt));
+                };
+                _ws_conn.onclose = function (evt) {
+                    document.getElementById('conn_state').textContent = 'DISCONNECTED';
+                    applyMessage('onclose', GetTimeStamp(), JSON.stringify(evt));
+                    _ws_conn = null;
+                };
+                _ws_conn.onerror = function (evt) {
+                    document.getElementById('conn_state').textContent = 'ERROR';
+                    applyMessage('onerror', GetTimeStamp(), JSON.stringify(evt));
+                    _ws_conn = null;
+                };
+                _ws_conn.onmessage = function (evt) {
+                    try {
+                        if (evt.data instanceof Blob) {
+                            var fr = new FileReader();
+                            fr.onloadend = function (event) {
+                                applyMessage('onmessage', GetTimeStamp(), event.target.result);
+                            };
+                            fr.readAsText(evt.data, 'utf-8');
+                        } else {
+                            applyMessage('onmessage', GetTimeStamp(), evt.data);
+                        }
+                    } catch (err) {
+                        applyMessage('onerror', GetTimeStamp(), evt.data);
+                    }
+                };
+            }
+
+            function closeWs() {
+                'use strict';
+                if (_ws_conn === null) {
+                    applyMessage('onerror', GetTimeStamp(), 'WebSocket has been closed. Can\'t close twice');
+                    return;
+                }
+                _ws_conn.close();
+                applyMessage('onmyclose', GetTimeStamp(), 'Disconnecting ' + _ws_conn.url + ", subprotocol: " + _ws_conn.protocol);
+            }
+
+            function sendWs(msg) {
+                'use strict';
+                if (_ws_conn === null) {
+                    applyMessage('onerror', GetTimeStamp(), 'WebSocket is not connected. Please connect before sending.');
+                    return;
+                }
+                _ws_conn.send(msg);
+                applyMessage('onsend', GetTimeStamp(), msg);
+            }
+
+            function cleanResp() {
+                'use strict';
+                document.getElementById('resp_list').innerHTML = "";
+            }
+
+            function selectButton(self) {
+                'use strict';
+                var arr = self.parentNode.getElementsByClassName('button');
+                for (var i = 0; i < arr.length; ++i) {
+                    var e = arr[i];
+                    e.style.backgroundColor = '';
+                }
+                self.style.backgroundColor = 'lightblue';
+            }
+
+            function filterResp(cls, btn) {
+                'use strict';
+                switch (cls) {
+                    case '*':
+                        var arr = document.getElementById('resp_list').getElementsByTagName('LI');
+                        if (arr === null || arr.length < 1) {
+                            arr = document.getElementById('resp_list').getElementsByTagName('li');
+                        }
+                        if (arr === null || arr.length < 1) {
+                            return;
+                        }
+                        for (var i = 0; i < arr.length; ++i) {
+                            var e = arr[i];
+                            e.style.display = 'block';
+                        }
+                        break;
+                    default:
+                        var arr2 = document.getElementById('resp_list').getElementsByTagName('A');
+                        if (arr2 === null || arr2.length < 1) {
+                            arr2 = document.getElementById('resp_list').getElementsByTagName('a');
+                        }
+                        if (arr2 === null || arr2.length < 1) {
+                            return;
+                        }
+                        for (var i = 0; i < arr2.length; ++i) {
+                            var e = arr2[i];
+                            if (e.className === cls) {
+                                e.parentNode.style.display = 'block';
+                            } else {
+                                e.parentNode.style.display = 'none';
+                            }
+                        }
+                        break;
+                }
+                selectButton(btn);
+            }
+        </script>
+    </head>
+
+    <body>
+        <header>
+            WebSocket Tester
+        </header>
+        <div class="container">
+            <div class="content">
+                <div class="container_pane">
+                    <div class="container_pane_title">URL</div>
+                    <div class="container_pane_content">
+                        <div class="container_button_pane">
+                            <div class="button" onClick="connectWs(document.getElementById('url_text').value, document.getElementById('subproto_text').value)">Connect</div>
+                            <div class="button" onClick="closeWs()">Disconnect</div>
+                            <div class="button" style="float: right" id="conn_state">DISCONNECTED</div>
+                        </div>
+                        <div class="container_labeltext">
+                            <div class="container_label">Sub-protocol:</div>
+                            <input type="text" class="container_text" placeholder="..." id="subproto_text" style="width: 400px;">
+                        </div>
+                        <textarea class="container_text" placeholder="Click here to enter URL" rows="5" id="url_text"></textarea>
+                    </div>
+                </div>
+                <div class="container_pane">
+                    <div class="container_pane_title">Payload</div>
+                    <div class="container_pane_content">
+                        <div class="container_button_pane">
+                            <div class="button" onClick="sendWs(document.getElementById('send_text').value)">Send</div>
+                        </div>
+                        <textarea class="container_text" placeholder="Click here to enter data" rows="10" id="send_text"></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="content" style="float: right">
+                <div class="container_pane">
+                    <div class="container_pane_title">Console</div>
+                    <div class="container_pane_content">
+                        <div class="container_button_pane">
+                            <div class="button" onClick="filterResp('*', this)">All</div>
+                            <div class="button" onClick="filterResp('list_item_send', this)">Sent</div>
+                            <div class="button" onClick="filterResp('list_item_message', this)">Response</div>
+                            <div class="button" onClick="filterResp('list_item_error', this)">Error</div>
+                            <div class="button" style="float: right; color: firebrick" onClick="cleanResp()">Clear</div>
+                        </div>
+                        <div class="container_inter_list">
+                            <ul id="resp_list"></ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer>
+            <span>© 2020  Hongbao Chen&lt;chenhongbao@outlook.com&gt;<br/></span>
+            <span>The source code is licensed under the <a href="https://www.gnu.org/licenses/agpl-3.0.html">GNU AFFERO GENERAL PUBLIC LICENSE Version 3</a>.</span>
+        </footer>
+    </body>
+</html>
